@@ -1,76 +1,93 @@
-import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  Button,
-  SafeAreaView,
-  StyleSheet,
-} from "react-native";
-import DraggableFlatList from "react-native-draggable-flatlist";
+import React, { useState, useMemo } from "react";
+import { SafeAreaView, View, Text, TextInput, Button, StyleSheet, TouchableOpacity } from "react-native";
 import useTodoStore from "../store/todoStore";
+import ReorderableList from "../../../components/ReorderableList";
 import TodoItem from "../../../components/TodoItem";
+import { useThemeStore } from "../store/themeStore";
+import { palettes } from "../../../theme/colors";
+import { Sun, Moon } from "lucide-react-native";
 
-const TodoScreen = () => {
-  const { todos, addTodo, toggleTodo, deleteTodo, reorderTodos } =
-    useTodoStore();
+export default function TodoScreen() {
+  const { todos, addTodo, toggleTodo, deleteTodo, reorderTodos } = useTodoStore();
+  const { theme, toggleTheme } = useThemeStore();
+  const C = palettes[theme];
   const [text, setText] = useState("");
 
+  const s = useMemo(() => makeStyles(C), [C]);
+
   const handleAdd = () => {
-    if (text.trim()) {
-      addTodo(text);
-      setText("");
-    }
+    const t = text.trim();
+    if (t) { addTodo(t); setText(""); }
   };
 
-  const sortedTodos = [
-    ...todos.filter((t) => !t.done),
-    ...todos.filter((t) => t.done),
-  ];
+  const sortedTodos = useMemo(
+    () => [...todos.filter((t) => !t.done), ...todos.filter((t) => t.done)],
+    [todos]
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          value={text}
-          onChangeText={setText}
-          placeholder="Add a todo..."
-        />
-        <Button title="Add" onPress={handleAdd} />
+    <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <Text style={s.title}>My Todos</Text>
+
+        <View style={s.right}>
+          <Text style={s.muted}>Theme</Text>
+         
+
+          <TouchableOpacity onPress={toggleTheme} style={{ padding: 8 }}>
+            {theme === "dark" ? (
+                <Sun size={22} color={C.accent} />
+            ) : (
+                <Moon size={22} color={C.accent} />
+            )}
+            </TouchableOpacity>
+
+        </View>
+
+        <View style={s.inputRow}>
+          <TextInput
+            style={s.input}
+            value={text}
+            onChangeText={setText}
+            placeholder="Add a task..."
+            placeholderTextColor={C.textMuted}
+            returnKeyType="done"
+            onSubmitEditing={handleAdd}
+          />
+          <Button title="Add" onPress={handleAdd} color={C.accent} />
+        </View>
       </View>
 
-      <DraggableFlatList
-        data={sortedTodos}
-        keyExtractor={(item) => item.id}
-        onDragEnd={({ data }) => reorderTodos(data)}
-        renderItem={({ item, drag }) => (
-          <View onLongPress={drag}>
+      <View style={{ flex: 1 }}>
+        <ReorderableList
+          items={sortedTodos}
+          itemHeight={56}
+          onOrderChange={reorderTodos}
+          renderItem={({ item, dragHandleProps }) => (
             <TodoItem
               item={item}
+              dragHandleProps={dragHandleProps}
               onToggle={toggleTodo}
               onDelete={deleteTodo}
+              theme={theme}
             />
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
     </SafeAreaView>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  inputRow: {
-    flexDirection: "row",
-    padding: 10,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginRight: 10,
-    padding: 8,
-    borderRadius: 5,
-  },
-});
-
-export default TodoScreen;
+const makeStyles = (C) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.bg },
+    header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+    title: { fontSize: 20, fontWeight: "700", color: C.text, marginBottom: 8 },
+    right: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+    muted: { color: C.textMuted },
+    inputRow: { flexDirection: "row", gap: 8 },
+    input: {
+      flex: 1, height: 44, borderRadius: 12, paddingHorizontal: 12,
+      backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.inputBorder, color: C.text,
+    },
+  });

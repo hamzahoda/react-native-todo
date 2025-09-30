@@ -5,6 +5,8 @@ const useTodoStore = create((set) => ({
   todos: [
     { id: uuid.v4(), text: "Learn React Native", done: false },
     { id: uuid.v4(), text: "Build Todo App", done: false },
+    { id: uuid.v4(), text: "Write tests", done: false },
+    { id: uuid.v4(), text: "Ship", done: false },
   ],
   addTodo: (text) =>
     set((state) => ({
